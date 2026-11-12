@@ -1,0 +1,1090 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="CoinWallet: live cryptocurrency market overview powered by CoinGecko." />
+  <title>CoinWallet · Crypto Market Overview</title>
+  <link rel="icon" href="logo.svg" type="image/svg+xml" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --color-cocoa: #593d3b;
+      --color-umber: #8a7968;
+      --color-mocha: #6f5e53;
+      --color-sand: #ab947e;
+      --color-latte: #c3a995;
+      --color-charcoal: #393e41;
+      --color-coral: #e94f37;
+      --color-cream: #f6f7eb;
+      --color-gain: #1ba648;
+      --color-loss: #d90429;
+
+      --bg: var(--color-latte);
+      --surface: var(--color-cream);
+      --sidebar-bg: var(--color-cocoa);
+      --text: var(--color-charcoal);
+      --text-muted: var(--color-mocha);
+      --line: rgba(89, 61, 59, 0.2);
+      --hover: rgba(171, 148, 126, 0.22);
+      --shadow: 0 10px 30px rgba(57, 62, 65, 0.12);
+      --radius: 18px;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    }
+
+    :focus-visible {
+      outline: 3px solid var(--color-coral);
+      outline-offset: 2px;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+    }
+
+    /* Layout and navigation */
+    .app-shell {
+      display: grid;
+      grid-template-columns: 240px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+      padding: 28px 18px;
+      background: var(--sidebar-bg);
+      color: var(--color-cream);
+      overflow-y: auto;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.2rem;
+      font-weight: 700;
+    }
+
+    .brand img {
+      width: 36px;
+      height: 36px;
+    }
+
+    .nav {
+      display: grid;
+      gap: 6px;
+    }
+
+    .nav-item {
+      position: relative;
+      padding: 12px 14px;
+      border: 0;
+      border-radius: 12px;
+      background: none;
+      color: rgba(246, 247, 235, 0.85);
+      font: inherit;
+      font-weight: 500;
+      text-align: left;
+      cursor: pointer;
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+
+    .nav-item:hover {
+      background: rgba(246, 247, 235, 0.1);
+      color: var(--color-cream);
+    }
+
+    .nav-item.is-active {
+      background: var(--color-charcoal);
+      color: var(--color-cream);
+    }
+
+    .nav-item.is-active::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 10px;
+      bottom: 10px;
+      width: 4px;
+      border-radius: 4px;
+      background: var(--color-coral);
+    }
+
+    .content {
+      display: grid;
+      gap: 24px;
+      align-content: start;
+      min-width: 0;
+      padding: 28px clamp(16px, 3vw, 40px) 48px;
+    }
+
+    [data-view]:not([data-view="dashboard"]) .stats {
+      display: none;
+    }
+
+    /* Header */
+    .topbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .eyebrow {
+      margin: 0 0 4px;
+      font-size: 0.85rem;
+    }
+
+    .page-title {
+      margin: 0 0 6px;
+      font-size: clamp(1.5rem, 2.6vw, 2.2rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+    }
+
+    .market-status {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+      font-size: 0.92rem;
+    }
+
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--color-gain);
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: var(--surface);
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .topbar-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .control {
+      min-height: 44px;
+      padding: 0 14px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--surface);
+      color: var(--text);
+      font: inherit;
+    }
+
+    .search-input {
+      min-width: 240px;
+    }
+
+    /* Shared components */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .stat {
+      padding: 20px;
+    }
+
+    .stat p {
+      margin: 0 0 8px;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .stat strong {
+      font-size: clamp(1.1rem, 2vw, 1.5rem);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.01em;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: 0 18px;
+      border: 1px solid transparent;
+      border-radius: 12px;
+      font: inherit;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      transition: opacity 0.2s ease;
+    }
+
+    .btn:hover {
+      opacity: 0.9;
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: wait;
+    }
+
+    .btn-primary {
+      background: var(--color-charcoal);
+      color: var(--color-cream);
+    }
+
+    .btn-ghost {
+      border-color: var(--line);
+      background: transparent;
+      color: var(--text);
+    }
+
+    .state-box {
+      display: grid;
+      justify-items: center;
+      gap: 10px;
+      padding: 40px 20px;
+      text-align: center;
+    }
+
+    .state-box h3 {
+      margin: 0;
+      font-size: 1.1rem;
+    }
+
+    .state-box p {
+      margin: 0;
+      max-width: 46ch;
+      color: var(--text-muted);
+    }
+
+    .skeleton-bar {
+      display: block;
+      height: 14px;
+      width: 72%;
+      border-radius: 8px;
+      background: linear-gradient(90deg, var(--hover) 25%, rgba(195, 169, 149, 0.55) 50%, var(--hover) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.6s ease-in-out infinite;
+    }
+
+    @keyframes shimmer {
+      to {
+        background-position: -200% 0;
+      }
+    }
+
+    /* Search panel */
+    .search-panel {
+      padding: 20px;
+    }
+
+    .panel-title {
+      margin: 0 0 12px;
+      font-size: 1rem;
+    }
+
+    .result-list {
+      display: grid;
+      gap: 4px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .result-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    /* Market table */
+    .table-card {
+      overflow: hidden;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chip {
+      min-height: 40px;
+      padding: 0 14px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: transparent;
+      color: var(--text);
+      font: inherit;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .chip:hover {
+      background: var(--hover);
+    }
+
+    .chip.is-active {
+      border-color: var(--color-charcoal);
+      background: var(--color-charcoal);
+      color: var(--color-cream);
+    }
+
+    .sort-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    .coin-table {
+      width: 100%;
+      min-width: 620px;
+      border-collapse: collapse;
+    }
+
+    .coin-table th,
+    .coin-table td {
+      padding: 14px 16px;
+      text-align: left;
+      white-space: nowrap;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .coin-table th {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .coin-table tbody tr:hover {
+      background: var(--hover);
+    }
+
+    .num {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .coin-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0;
+      border: 0;
+      background: none;
+      color: inherit;
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .coin-link:hover .coin-name {
+      text-decoration: underline;
+    }
+
+    .coin-logo {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+    }
+
+    .coin-meta {
+      display: grid;
+    }
+
+    .coin-name {
+      font-weight: 600;
+    }
+
+    .coin-symbol {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .is-up {
+      color: var(--color-gain);
+      font-weight: 700;
+    }
+
+    .is-down {
+      color: var(--color-loss);
+      font-weight: 700;
+    }
+
+    .is-flat {
+      color: var(--text-muted);
+    }
+
+    .star {
+      min-width: 44px;
+      min-height: 44px;
+      border: 0;
+      border-radius: 50%;
+      background: none;
+      color: var(--text-muted);
+      font-size: 1.3rem;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .star:hover {
+      background: var(--hover);
+    }
+
+    .star.is-on {
+      color: var(--color-coral);
+    }
+
+    /* Detail dialog */
+    .detail {
+      width: min(560px, calc(100vw - 32px));
+      max-height: calc(100vh - 32px);
+      overflow: auto;
+      padding: 0;
+      border: 0;
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: 0 24px 60px rgba(57, 62, 65, 0.35);
+    }
+
+    .detail::backdrop {
+      background: rgba(57, 62, 65, 0.55);
+    }
+
+    .detail-body {
+      display: grid;
+      gap: 18px;
+      padding: 24px;
+    }
+
+    .detail-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .detail-head {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .detail-head h2 {
+      margin: 0;
+      font-size: 1.4rem;
+    }
+
+    .detail-logo {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+    }
+
+    .detail-price {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 10px;
+      margin: 0;
+      font-size: 1.6rem;
+    }
+
+    .detail-price span {
+      font-size: 1rem;
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin: 0;
+    }
+
+    .detail-grid div {
+      padding: 12px;
+      border-radius: 12px;
+      background: rgba(195, 169, 149, 0.22);
+    }
+
+    .detail-grid dt {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .detail-grid dd {
+      margin: 4px 0 0;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .detail-desc {
+      max-height: 140px;
+      margin: 0;
+      overflow-y: auto;
+      font-size: 0.92rem;
+      line-height: 1.6;
+      color: var(--text-muted);
+    }
+
+    /* Responsive */
+
+    /* Tablet and Desktop: Show nav as horizontal bar */
+    @media (min-width: 1025px) {
+      .app-shell {
+        grid-template-columns: 240px minmax(0, 1fr);
+      }
+
+      .sidebar {
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        gap: 32px;
+        padding: 28px 18px;
+      }
+
+      .hamburger {
+        display: none !important;
+      }
+
+      .nav {
+        display: grid !important;
+        gap: 6px;
+      }
+    }
+
+    /* Tablet: Horizontal nav, no hamburger */
+    @media (768px <=width < 1025px) {
+      .app-shell {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        position: sticky;
+        z-index: 100;
+        top: 0;
+        height: auto;
+        flex-direction: row;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+      }
+
+      .brand {
+        margin: 0;
+        flex-shrink: 0;
+      }
+
+      .nav {
+        display: flex !important;
+        gap: 6px;
+        overflow-x: auto;
+        flex: 1;
+      }
+
+      .nav-item {
+        padding: 10px 12px;
+        white-space: nowrap;
+        font-size: 0.95rem;
+      }
+
+      .nav-item.is-active::before {
+        display: none;
+      }
+
+      .nav-item.is-active {
+        background: var(--color-charcoal);
+        border-radius: 8px;
+      }
+
+      .content {
+        padding: 20px clamp(12px, 2vw, 24px) 24px;
+        gap: 16px;
+      }
+
+      .hamburger {
+        display: none !important;
+      }
+
+      .col-cap {
+        display: none;
+      }
+
+      .coin-table {
+        min-width: 0;
+      }
+
+      .coin-table th,
+      .coin-table td {
+        padding: 10px 8px;
+        font-size: 0.9rem;
+      }
+
+      .topbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+      }
+
+      .topbar>div:first-child {
+        width: 100%;
+      }
+
+      .topbar>div:nth-child(2) {
+        width: 100%;
+      }
+
+      .topbar>div:last-child {
+        display: flex;
+        gap: 8px;
+        width: 100%;
+        flex-wrap: wrap;
+      }
+
+      .search-input {
+        width: 100%;
+        min-width: 0;
+      }
+
+      .detail-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .page-title {
+        font-size: clamp(1.2rem, 5vw, 1.8rem);
+      }
+
+      .stat {
+        padding: 16px 12px;
+      }
+    }
+
+    /* Mobile: Hamburger menu, hidden nav */
+    @media (max-width: 767px) {
+      .app-shell {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        position: sticky;
+        z-index: 100;
+        top: 0;
+        height: auto;
+        padding: 12px 14px;
+        gap: 12px;
+        flex-wrap: nowrap;
+        justify-content: space-between;
+        align-items: center;
+        display: flex;
+        flex-direction: row;
+      }
+
+      .brand {
+        gap: 8px;
+        font-size: 0.95rem;
+        flex-shrink: 0;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        flex: 1;
+      }
+
+      .brand img {
+        width: 28px;
+        height: 28px;
+      }
+
+      .hamburger {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        border: 0;
+        background: rgba(246, 247, 235, 0.1);
+        color: var(--color-cream);
+        font-size: 1.4rem;
+        cursor: pointer;
+        padding: 0;
+        border-radius: 8px;
+        flex-shrink: 0;
+        margin-left: auto;
+      }
+
+      .hamburger:hover {
+        background: rgba(246, 247, 235, 0.2);
+      }
+
+      .hamburger:active {
+        background: rgba(246, 247, 235, 0.15);
+      }
+
+      .nav {
+        display: none;
+        gap: 4px;
+        flex-direction: column;
+        position: fixed;
+        top: 54px;
+        left: 0;
+        right: 0;
+        background: var(--sidebar-bg);
+        border-radius: 0;
+        padding: 8px 12px;
+        z-index: 99;
+        margin: 0;
+        height: auto;
+        max-height: calc(100vh - 54px);
+        overflow-y: auto;
+      }
+
+      .nav.active {
+        display: flex;
+      }
+
+      .nav-item {
+        padding: 12px 14px;
+        font-size: 0.9rem;
+        width: 100%;
+        text-align: left;
+        border-radius: 6px;
+        display: block;
+        white-space: normal;
+      }
+
+      .nav-item:hover {
+        background: rgba(246, 247, 235, 0.15);
+      }
+
+      .nav-item.is-active::before {
+        display: none;
+      }
+
+      .nav-item.is-active {
+        background: var(--color-charcoal);
+      }
+
+      .content {
+        padding: 14px 12px 20px;
+        gap: 12px;
+        margin-top: 54px;
+      }
+
+      .topbar {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        width: 100%;
+        align-items: stretch;
+      }
+
+      .topbar>div:first-child {
+        width: 100%;
+      }
+
+      .topbar>div:nth-child(2) {
+        width: 100%;
+      }
+
+      .topbar>div:last-child {
+        display: flex;
+        gap: 8px;
+        width: 100%;
+        flex-wrap: wrap;
+      }
+
+      .topbar-actions {
+        width: 100%;
+        gap: 8px;
+        flex-direction: row;
+        justify-content: space-between;
+      }
+
+      .control {
+        flex: 1;
+        min-width: 80px;
+        min-height: 40px;
+        padding: 0 10px;
+        font-size: 0.9rem;
+      }
+
+      .btn {
+        min-height: 40px;
+        padding: 0 12px;
+        font-size: 0.9rem;
+        flex: 1;
+      }
+
+      .page-title {
+        font-size: clamp(1.1rem, 4vw, 1.5rem);
+        margin: 0 0 4px;
+      }
+
+      .eyebrow {
+        font-size: 0.75rem;
+      }
+
+      .market-status {
+        font-size: 0.8rem;
+      }
+
+      .col-cap {
+        display: none;
+      }
+
+      .coin-table th,
+      .coin-table td {
+        padding: 8px 6px;
+        font-size: 0.8rem;
+      }
+
+      .coin-logo {
+        width: 28px;
+        height: 28px;
+      }
+
+      .star {
+        min-width: 36px;
+        min-height: 36px;
+        font-size: 1.1rem;
+      }
+
+      .detail {
+        width: min(90vw, 480px);
+      }
+
+      .detail-body {
+        padding: 16px;
+        gap: 12px;
+      }
+
+      .detail-head h2 {
+        font-size: 1.2rem;
+      }
+
+      .detail-logo {
+        width: 48px;
+        height: 48px;
+      }
+
+      .detail-price {
+        font-size: 1.4rem;
+      }
+
+      .stat strong {
+        font-size: clamp(0.95rem, 3vw, 1.3rem);
+      }
+
+      .chips {
+        gap: 6px;
+      }
+
+      .chip {
+        padding: 0 10px;
+        min-height: 36px;
+        font-size: 0.85rem;
+      }
+
+      .search-input {
+        width: 100%;
+        min-width: 0;
+      }
+
+      .detail-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .skeleton-bar {
+        animation: none;
+      }
+
+      .nav-item,
+      .chip,
+      .btn {
+        transition: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <img src="logo.svg" alt="CoinWallet logo" width="28" height="28" />
+        <span>CoinWallet</span>
+      </div>
+      <button class="hamburger" id="hamburger" type="button" aria-label="Toggle navigation menu"
+        aria-expanded="false">☰</button>
+      <nav class="nav" id="mobile-nav" aria-label="Main navigation">
+        <button class="nav-item is-active" type="button" data-action="nav" data-view="dashboard"
+          aria-current="page">Dashboard</button>
+        <button class="nav-item" type="button" data-action="nav" data-view="markets">Markets</button>
+        <button class="nav-item" type="button" data-action="nav" data-view="watchlist">Watchlist</button>
+      </nav>
+    </aside>
+
+    <main class="content" id="app" data-view="dashboard">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow" id="today"></p>
+          <h1 class="page-title">Crypto Market Overview</h1>
+          <p class="market-status">
+            <span class="live-dot" aria-hidden="true"></span>
+            <span id="market-status" class="status-pill">Connecting…</span>
+            <span id="last-updated"></span>
+          </p>
+        </div>
+        <div class="topbar-actions">
+          <input id="search" class="control search-input" type="search" placeholder="Search name or symbol"
+            aria-label="Search cryptocurrencies" autocomplete="off" />
+          <select id="currency" class="control" aria-label="Currency">
+            <option value="usd">USD</option>
+            <option value="inr">INR</option>
+          </select>
+          <button id="refresh" class="btn btn-primary" type="button" data-action="refresh">Refresh</button>
+        </div>
+      </header>
+
+      <section class="stats grid grid-cols-2 gap-4 lg:grid-cols-4" aria-label="Market summary">
+        <article class="card stat">
+          <p>Total market cap</p><strong id="stat-market-cap">…</strong>
+        </article>
+        <article class="card stat">
+          <p>24h trading volume</p><strong id="stat-volume">…</strong>
+        </article>
+        <article class="card stat">
+          <p>Bitcoin dominance</p><strong id="stat-dominance">…</strong>
+        </article>
+        <article class="card stat">
+          <p>Active cryptocurrencies</p><strong id="stat-active">…</strong>
+        </article>
+      </section>
+
+      <section class="card search-panel" id="search-panel" aria-live="polite" hidden></section>
+
+      <section class="card table-card" aria-label="Cryptocurrency list">
+        <div class="toolbar">
+          <div class="chips" role="group" aria-label="Filter coins">
+            <button class="chip is-active" type="button" data-action="filter" data-filter="all"
+              aria-pressed="true">All</button>
+            <button class="chip" type="button" data-action="filter" data-filter="gainers"
+              aria-pressed="false">Gainers</button>
+            <button class="chip" type="button" data-action="filter" data-filter="losers"
+              aria-pressed="false">Losers</button>
+            <button class="chip" type="button" data-action="filter" data-filter="watchlist"
+              aria-pressed="false">Watchlisted</button>
+          </div>
+          <label class="sort-label">Sort by
+            <select id="sort" class="control">
+              <option value="rank:asc">Market rank</option>
+              <option value="price:desc">Price, high to low</option>
+              <option value="price:asc">Price, low to high</option>
+              <option value="change:desc">24h change, high to low</option>
+              <option value="change:asc">24h change, low to high</option>
+              <option value="marketCap:desc">Market cap, high to low</option>
+              <option value="marketCap:asc">Market cap, low to high</option>
+            </select>
+          </label>
+        </div>
+        <div class="table-wrap" id="table-wrap">
+          <table class="coin-table">
+            <thead>
+              <tr>
+                <th scope="col">#</th>
+                <th scope="col">Coin</th>
+                <th scope="col" class="num">Price</th>
+                <th scope="col" class="num">24h</th>
+                <th scope="col" class="num col-cap">Market cap</th>
+                <th scope="col"><span class="sr-only">Watchlist</span></th>
+              </tr>
+            </thead>
+            <tbody id="coin-rows"></tbody>
+          </table>
+        </div>
+        <div id="table-state" hidden></div>
+      </section>
+
+      <dialog class="detail" id="detail" aria-label="Coin details">
+        <div class="detail-body">
+          <div class="detail-top">
+            <span class="eyebrow">Coin details</span>
+            <button class="btn btn-ghost" type="button" data-action="close-detail">Close</button>
+          </div>
+          <div id="detail-content"></div>
+        </div>
+      </dialog>
+    </main>
+  </div>
+  <script type="module" src="app.js"></script>
+</body>
+
+</html>
